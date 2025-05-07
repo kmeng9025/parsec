@@ -1,20 +1,34 @@
 const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
-// Enable CORS for browser compatibility
-app.use(cors());
+const target = 'https://web.parsec.app';
 
-// Proxy configuration
-app.use('/', createProxyMiddleware({
-    target: 'https://web.parsec.app',
+// Enable proxying of all requests (static + API + WebSocket)
+app.use(
+  '/',
+  createProxyMiddleware({
+    target,
     changeOrigin: true,
-    secure: true
-}));
+    ws: true, // WebSocket support
+    secure: true,
+    selfHandleResponse: false,
+    onProxyReq: (proxyReq, req, res) => {
+      // Optional: modify headers or log
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      // Optional: inspect or modify response
+    },
+    pathRewrite: {
+      '^/': '/', // Keep path as-is
+    },
+  })
+);
 
 app.listen(PORT, () => {
-    console.log(`Proxy server running on port ${PORT}`);
+  console.log(`Parsec proxy running on http://localhost:${PORT}`);
 });
